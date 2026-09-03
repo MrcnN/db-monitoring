@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: dev
+    volumes:
+      - .:/app
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    ports:
+      - "8080:8080"
+    restart: "no"
+
+  postgres:
+    ports:
+      - "5432:5432"
+    restart: "no"
+
+  redis:
+    ports:
+      - "6379:6379"
+    restart: "no"
+
+  frontend:
+    restart: "no"
+    ports:
+      - "3000:3000"
+
+  prometheus:
+    ports:
+      - "9090:9090"
+    restart: "no"
+
+  grafana:
+    restart: "no"
+
+  postgres-target:
+    restart: "no"
+
+  mysql-target:
+    restart: "no"
