@@ -1,5 +1,5 @@
 import api from '../lib/axios';
-import { Metric, HealthResult } from '../types';
+import { Metric, HealthResult, SlowQuery } from '../types';
 
 export const getMetrics = async (dbId: string, timeRange: string = '1h'): Promise<Metric[]> => {
   const response = await api.get(`/databases/${dbId}/metrics?range=${timeRange}`);
@@ -19,4 +19,9 @@ export const getDatabaseHealth = async (dbId: string): Promise<HealthResult> => 
     issues: [],
     summary: 'Health data not available',
   };
+};
+
+export const getSlowQueries = async (dbId: string): Promise<SlowQuery[]> => {
+  const response = await api.get(`/databases/${dbId}/slow-queries`);
+  return response.data?.data || [];
 };

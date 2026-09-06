@@ -16,14 +16,16 @@ import {
 import toast from 'react-hot-toast';
 
 import { getDatabase, testExistingConnection } from '../api/databases';
-import { getMetrics, getLatestMetric, getDatabaseHealth } from '../api/metrics';
+import { getSlowQueries, getMetrics, getLatestMetric, getDatabaseHealth } from '../api/metrics';
 import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { SlowQueryTable } from '../components/database/SlowQueryTable';
 
 export default function DatabaseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<string>('1h');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'slow_queries'>('metrics');
 
   const { data: db, isLoading: dbLoading } = useQuery({
     queryKey: ['database', id],
@@ -50,6 +52,13 @@ export default function DatabaseDetailPage() {
     queryFn: () => getDatabaseHealth(id!),
     enabled: !!id,
     refetchInterval: 15000,
+  });
+
+  const { data: slowQueries = [], isLoading: slowQueriesLoading } = useQuery({
+    queryKey: ['slowQueries', id],
+    queryFn: () => getSlowQueries(id!),
+    enabled: !!id && activeTab === 'slow_queries',
+    refetchInterval: 30000,
   });
 
   const testMutation = useMutation({
@@ -282,64 +291,97 @@ export default function DatabaseDetailPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center space-x-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </span>
-          <span className="text-xs text-gray-400">Live Telemetry (Updated every 10s)</span>
-        </div>
-
-        <div className="inline-flex rounded-md shadow-sm bg-gray-800 p-0.5 border border-gray-700">
-          {(['15m', '1h', '6h', '24h'] as const).map((r) => (
-            <button
-              key={r}
-              onClick={() => setTimeRange(r)}
-              className={`px-3 py-1 text-xs font-medium rounded ${
-                timeRange === r
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              {r.toUpperCase()}
-            </button>
-          ))}
-        </div>
+      <div className="border-b border-gray-700">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('metrics')}
+            className={`${
+              activeTab === 'metrics'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+          >
+            Metrics Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('slow_queries')}
+            className={`${
+              activeTab === 'slow_queries'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+          >
+            Slow Query Analyzer
+          </button>
+        </nav>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <TimeSeriesChart
-          title="Active Connections"
-          data={connData}
-          unit="conn"
-          color="#3b82f6"
-          threshold={latestMetric?.connections_total ? latestMetric.connections_total * 0.8 : 80}
-        />
+      {activeTab === 'metrics' ? (
+        <>
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center space-x-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="text-xs text-gray-400">Live Telemetry (Updated every 10s)</span>
+            </div>
 
-        <TimeSeriesChart
-          title="Cache Hit Ratio (%)"
-          data={cacheHitData}
-          unit="%"
-          color="#10b981"
-          threshold={95}
-        />
+            <div className="inline-flex rounded-md shadow-sm bg-gray-800 p-0.5 border border-gray-700">
+              {(['15m', '1h', '6h', '24h'] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setTimeRange(r)}
+                  className={`px-3 py-1 text-xs font-medium rounded ${
+                    timeRange === r
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {r.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        <TimeSeriesChart
-          title="Transactions / Query Rate"
-          data={queryRateData}
-          unit="TPS"
-          color="#f59e0b"
-        />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <TimeSeriesChart
+              title="Active Connections"
+              data={connData}
+              unit="conn"
+              color="#3b82f6"
+              threshold={latestMetric?.connections_total ? latestMetric.connections_total * 0.8 : 80}
+            />
 
-        <TimeSeriesChart
-          title="Query Latency (P95)"
-          data={latencyData}
-          unit="ms"
-          color="#8b5cf6"
-          threshold={200}
-        />
-      </div>
+            <TimeSeriesChart
+              title="Cache Hit Ratio (%)"
+              data={cacheHitData}
+              unit="%"
+              color="#10b981"
+              threshold={95}
+            />
+
+            <TimeSeriesChart
+              title="Transactions / Query Rate"
+              data={queryRateData}
+              unit="TPS"
+              color="#f59e0b"
+            />
+
+            <TimeSeriesChart
+              title="Query Latency (P95)"
+              data={latencyData}
+              unit="ms"
+              color="#8b5cf6"
+              threshold={200}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="pt-2">
+          <SlowQueryTable queries={slowQueries} isLoading={slowQueriesLoading} />
+        </div>
+      )}
     </div>
   );
 }

@@ -114,3 +114,11 @@ export interface HealthResult {
   summary: string;
 }
 
+export interface SlowQuery {
+  query: string;
+  calls: number;
+  total_time_ms: number;
+  mean_time_ms: number;
+  max_time_ms: number;
+  rows: number;
+}
