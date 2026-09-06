@@ -99,5 +99,5 @@ func (h *IncidentHandler) DeleteChannel(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	response.NoContent(w, r)
+	response.NoContent(w)
 }

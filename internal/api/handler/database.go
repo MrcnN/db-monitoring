@@ -327,7 +327,7 @@ func (h *DatabaseHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		Status:       "success",
 	})
 
-	response.NoContent(w, r)
+	response.NoContent(w)
 }
 
 func (h *DatabaseHandler) ExecuteQuery(w http.ResponseWriter, r *http.Request) {

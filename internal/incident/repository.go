@@ -41,7 +41,7 @@ func (r *repository) GetOpenByDatabase(ctx context.Context, dbID uuid.UUID) (*In
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.NewNotFound("incident", "database_id")
+			return nil, errors.NewNotFound("incident")
 		}
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (r *repository) UpdateStatus(ctx context.Context, id uuid.UUID, status Stat
 		return err
 	}
 	if res.RowsAffected() == 0 {
-		return errors.NewNotFound("incident", id.String())
+		return errors.NewNotFound("incident")
 	}
 	return nil
 }
