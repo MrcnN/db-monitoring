@@ -20,15 +20,17 @@ import { getSlowQueries, getMetrics, getLatestMetric, getDatabaseHealth } from '
 import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { SlowQueryTable } from '../components/database/SlowQueryTable';
+import { AlertsTable } from '../components/database/AlertsTable';
 import { useLiveMetrics } from '../hooks/useLiveMetrics';
 import { Metric } from '../types';
+import { getAlerts } from '../api/alerts';
 
 export default function DatabaseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [timeRange, setTimeRange] = useState<string>('1h');
-  const [activeTab, setActiveTab] = useState<'metrics' | 'slow_queries'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'slow_queries' | 'alerts'>('metrics');
 
   const { data: db, isLoading: dbLoading } = useQuery({
     queryKey: ['database', id],
@@ -53,6 +55,13 @@ export default function DatabaseDetailPage() {
     queryKey: ['databaseHealth', id],
     queryFn: () => getDatabaseHealth(id!),
     enabled: !!id,
+  });
+
+  const { data: alerts = [], isLoading: alertsLoading } = useQuery({
+    queryKey: ['databaseAlerts', id],
+    queryFn: () => getAlerts(id!),
+    enabled: !!id && activeTab === 'alerts',
+    refetchInterval: 30000,
   });
 
   // Connect to WebSocket for live updates
@@ -333,6 +342,16 @@ export default function DatabaseDetailPage() {
           >
             Slow Query Analyzer
           </button>
+          <button
+            onClick={() => setActiveTab('alerts')}
+            className={`${
+              activeTab === 'alerts'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+          >
+            Alerts History
+          </button>
         </nav>
       </div>
 
@@ -401,9 +420,13 @@ export default function DatabaseDetailPage() {
             />
           </div>
         </>
-      ) : (
+      ) : activeTab === 'slow_queries' ? (
         <div className="pt-2">
           <SlowQueryTable queries={slowQueries} isLoading={slowQueriesLoading} />
+        </div>
+      ) : (
+        <div className="pt-2">
+          <AlertsTable alerts={alerts} isLoading={alertsLoading} />
         </div>
       )}
     </div>
