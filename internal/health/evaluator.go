@@ -79,7 +79,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 	score := 100
 
 	if snapshot.ConnectionUsagePct >= 92.0 {
-		score -= 40
+		score -= 45
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityCritical,
 			Title:        "Connection Pool Exhaustion",
@@ -88,7 +88,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 			Threshold:    "< 90%",
 		})
 	} else if snapshot.ConnectionUsagePct >= 80.0 {
-		score -= 15
+		score -= 20
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityWarning,
 			Title:        "Elevated Connection Usage",
@@ -99,7 +99,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 	}
 
 	if snapshot.CacheHitRatio > 0 && snapshot.CacheHitRatio < 85.0 {
-		score -= 30
+		score -= 45
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityCritical,
 			Title:        "Poor Cache Hit Ratio",
@@ -108,7 +108,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 			Threshold:    "> 95%",
 		})
 	} else if snapshot.CacheHitRatio > 0 && snapshot.CacheHitRatio < 95.0 {
-		score -= 10
+		score -= 20
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityWarning,
 			Title:        "Suboptimal Cache Hit Ratio",
@@ -119,7 +119,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 	}
 
 	if snapshot.P95LatencyMs >= 1000.0 {
-		score -= 35
+		score -= 45
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityCritical,
 			Title:        "Critical Query Latency",
@@ -128,7 +128,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 			Threshold:    "< 200 ms",
 		})
 	} else if snapshot.P95LatencyMs >= 200.0 {
-		score -= 15
+		score -= 20
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityWarning,
 			Title:        "Elevated Query Latency",
@@ -139,7 +139,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 	}
 
 	if snapshot.ActiveLocksCount >= 50 {
-		score -= 30
+		score -= 45
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityCritical,
 			Title:        "High Lock Contention",
@@ -148,7 +148,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 			Threshold:    "< 10 locks",
 		})
 	} else if snapshot.ActiveLocksCount >= 10 {
-		score -= 10
+		score -= 20
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityWarning,
 			Title:        "Moderate Lock Contention",
@@ -159,7 +159,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 	}
 
 	if snapshot.DeadTuplesCount >= 500000 {
-		score -= 15
+		score -= 20
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityWarning,
 			Title:        "High Dead Tuples Bloat",
@@ -170,7 +170,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 	}
 
 	if snapshot.ReplicationLagSeconds >= 60.0 {
-		score -= 30
+		score -= 45
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityCritical,
 			Title:        "High Replication Lag",
@@ -179,7 +179,7 @@ func (e *Evaluator) Evaluate(snapshot *collector.MetricsSnapshot, isReachable bo
 			Threshold:    "< 10 s",
 		})
 	} else if snapshot.ReplicationLagSeconds >= 10.0 {
-		score -= 10
+		score -= 20
 		issues = append(issues, HealthIssue{
 			Severity:     SeverityWarning,
 			Title:        "Noticeable Replication Lag",
