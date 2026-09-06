@@ -17,6 +17,7 @@ import (
 	"github.com/dbplatform/api/internal/api/middleware"
 	"github.com/dbplatform/api/internal/api/ws"
 	"github.com/dbplatform/api/internal/alert"
+	"github.com/dbplatform/api/internal/incident"
 	"github.com/dbplatform/api/internal/audit"
 	"github.com/dbplatform/api/internal/auth"
 	"github.com/dbplatform/api/internal/config"
@@ -83,6 +84,7 @@ func main() {
 	auditRepo := audit.NewRepository(pool)
 	metricsRepo := metrics.NewRepository(pool)
 	alertRepo := alert.NewRepository(pool)
+	incidentRepo := incident.NewRepository(pool)
 
 	jwtSvc := auth.NewJWTService(cfg.JWT)
 	authSvc := auth.NewService(userRepo, sessionRepo, jwtSvc, cfg.JWT.RefreshTokenTTL)
@@ -90,6 +92,7 @@ func main() {
 	auditSvc := audit.NewService(auditRepo)
 	metricsSvc := metrics.NewService(metricsRepo)
 	alertSvc := alert.NewService(alertRepo)
+	incidentSvc := incident.NewService(incidentRepo, logger)
 	healthEvaluator := health.NewEvaluator()
 
 	workerCtx, cancelWorker := context.WithCancel(context.Background())
@@ -114,6 +117,7 @@ func main() {
 	auditHandler := handler.NewAuditLogHandler(auditRepo, logger)
 	metricsHandler := handler.NewMetricsHandler(metricsSvc, dbSvc, healthEvaluator, encryptor, wsHub, logger)
 	alertHandler := handler.NewAlertHandler(alertSvc, logger)
+	incidentHandler := handler.NewIncidentHandler(incidentSvc, logger)
 
 	rateLimiter := middleware.NewRateLimiter(cfg.Server.RateLimit, cfg.Server.RateBurst)
 
@@ -124,6 +128,7 @@ func main() {
 		AuditHandler:    auditHandler,
 		MetricsHandler:  metricsHandler,
 		AlertHandler:    alertHandler,
+		IncidentHandler: incidentHandler,
 		JWTService:      jwtSvc,
 		RateLimiter:     rateLimiter,
 		Log:             logger,

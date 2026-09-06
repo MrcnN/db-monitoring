@@ -22,6 +22,7 @@ type RouterConfig struct {
 	AuditHandler    *handler.AuditLogHandler
 	MetricsHandler  *handler.MetricsHandler
 	AlertHandler    *handler.AlertHandler
+	IncidentHandler *handler.IncidentHandler
 	JWTService      *auth.JWTService
 	RateLimiter     *middleware.RateLimiter
 	Log             zerolog.Logger
@@ -90,6 +91,11 @@ func NewRouter(cfg RouterConfig) http.Handler {
 			r.Get("/databases/{id}/alerts", cfg.AlertHandler.ListByDatabase)
 
 			r.Get("/alerts", cfg.AlertHandler.ListActive)
+
+			r.Get("/incidents", cfg.IncidentHandler.List)
+			r.Get("/notification-channels", cfg.IncidentHandler.ListChannels)
+			r.Post("/notification-channels", cfg.IncidentHandler.CreateChannel)
+			r.Delete("/notification-channels/{id}", cfg.IncidentHandler.DeleteChannel)
 
 			r.With(middleware.RequireRole(user.RoleAdmin)).Get("/audit-logs", cfg.AuditHandler.List)
 		})

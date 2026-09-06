@@ -11,20 +11,22 @@ import (
 	"github.com/dbplatform/api/internal/crypto"
 	"github.com/dbplatform/api/internal/database"
 	"github.com/dbplatform/api/internal/health"
+	"github.com/dbplatform/api/internal/incident"
 	"github.com/dbplatform/api/internal/metrics"
 	"github.com/dbplatform/api/internal/observability"
 	"github.com/rs/zerolog"
 )
 
 type CollectorWorker struct {
-	dbSvc     *database.Service
-	metricSvc *metrics.Service
-	evaluator *health.Evaluator
-	encryptor *crypto.Encryptor
-	alertSvc  *alert.Service
-	wsHub     *ws.Hub
-	interval  time.Duration
-	log       zerolog.Logger
+	dbSvc       *database.Service
+	metricSvc   *metrics.Service
+	evaluator   *health.Evaluator
+	encryptor   *crypto.Encryptor
+	alertSvc    *alert.Service
+	incidentSvc *incident.Service
+	wsHub       *ws.Hub
+	interval    time.Duration
+	log         zerolog.Logger
 }
 
 func NewCollectorWorker(
@@ -33,6 +35,7 @@ func NewCollectorWorker(
 	evaluator *health.Evaluator,
 	encryptor *crypto.Encryptor,
 	alertSvc *alert.Service,
+	incidentSvc *incident.Service,
 	wsHub *ws.Hub,
 	interval time.Duration,
 	log zerolog.Logger,
@@ -41,14 +44,15 @@ func NewCollectorWorker(
 		interval = 15 * time.Second
 	}
 	return &CollectorWorker{
-		dbSvc:     dbSvc,
-		metricSvc: metricSvc,
-		evaluator: evaluator,
-		encryptor: encryptor,
-		alertSvc:  alertSvc,
-		wsHub:     wsHub,
-		interval:  interval,
-		log:       log.With().Str("component", "collector_worker").Logger(),
+		dbSvc:       dbSvc,
+		metricSvc:   metricSvc,
+		evaluator:   evaluator,
+		encryptor:   encryptor,
+		alertSvc:    alertSvc,
+		incidentSvc: incidentSvc,
+		wsHub:       wsHub,
+		interval:    interval,
+		log:         log.With().Str("component", "collector_worker").Logger(),
 	}
 }
 
@@ -169,6 +173,7 @@ func (w *CollectorWorker) collectOne(parentCtx context.Context, target database.
 
 	_ = w.dbSvc.UpdateStatus(collectCtx, target.ID, newStatus)
 	_ = w.alertSvc.ProcessHealthResult(collectCtx, target.ID, healthResult)
+	_ = w.incidentSvc.EvaluateHealth(collectCtx, target.ID, healthResult)
 
 	select {
 	case w.wsHub.Broadcast <- ws.Message{
@@ -197,6 +202,7 @@ func (w *CollectorWorker) recordFailure(ctx context.Context, target database.Mon
 
 	res := w.evaluator.Evaluate(nil, false, lastErr)
 	_ = w.alertSvc.ProcessHealthResult(ctx, target.ID, res)
+	_ = w.incidentSvc.EvaluateHealth(ctx, target.ID, res)
 
 	select {
 	case w.wsHub.Broadcast <- ws.Message{
