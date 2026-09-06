@@ -422,7 +422,7 @@ export default function DatabaseDetailPage() {
         </>
       ) : activeTab === 'slow_queries' ? (
         <div className="pt-2">
-          <SlowQueryTable queries={slowQueries} isLoading={slowQueriesLoading} />
+          <SlowQueryTable queries={slowQueries} isLoading={slowQueriesLoading} databaseId={id} />
         </div>
       ) : (
         <div className="pt-2">
