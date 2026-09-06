@@ -21,6 +21,7 @@ type RouterConfig struct {
 	DatabaseHandler *handler.DatabaseHandler
 	AuditHandler    *handler.AuditLogHandler
 	MetricsHandler  *handler.MetricsHandler
+	AlertHandler    *handler.AlertHandler
 	JWTService      *auth.JWTService
 	RateLimiter     *middleware.RateLimiter
 	Log             zerolog.Logger
@@ -85,6 +86,10 @@ func NewRouter(cfg RouterConfig) http.Handler {
 			r.Get("/databases/{id}/metrics/latest", cfg.MetricsHandler.GetLatest)
 			r.Get("/databases/{id}/health", cfg.MetricsHandler.GetHealth)
 			r.Get("/databases/{id}/slow-queries", cfg.MetricsHandler.GetSlowQueries)
+			r.Get("/databases/{id}/live", cfg.MetricsHandler.LiveStream)
+			r.Get("/databases/{id}/alerts", cfg.AlertHandler.ListByDatabase)
+
+			r.Get("/alerts", cfg.AlertHandler.ListActive)
 
 			r.With(middleware.RequireRole(user.RoleAdmin)).Get("/audit-logs", cfg.AuditHandler.List)
 		})

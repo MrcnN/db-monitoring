@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dbplatform/api/internal/alert"
 	"github.com/dbplatform/api/internal/api/ws"
 	"github.com/dbplatform/api/internal/collector"
 	"github.com/dbplatform/api/internal/crypto"
@@ -20,6 +21,7 @@ type CollectorWorker struct {
 	metricSvc *metrics.Service
 	evaluator *health.Evaluator
 	encryptor *crypto.Encryptor
+	alertSvc  *alert.Service
 	wsHub     *ws.Hub
 	interval  time.Duration
 	log       zerolog.Logger
@@ -30,6 +32,7 @@ func NewCollectorWorker(
 	metricSvc *metrics.Service,
 	evaluator *health.Evaluator,
 	encryptor *crypto.Encryptor,
+	alertSvc *alert.Service,
 	wsHub *ws.Hub,
 	interval time.Duration,
 	log zerolog.Logger,
@@ -42,6 +45,7 @@ func NewCollectorWorker(
 		metricSvc: metricSvc,
 		evaluator: evaluator,
 		encryptor: encryptor,
+		alertSvc:  alertSvc,
 		wsHub:     wsHub,
 		interval:  interval,
 		log:       log.With().Str("component", "collector_worker").Logger(),
@@ -164,6 +168,7 @@ func (w *CollectorWorker) collectOne(parentCtx context.Context, target database.
 	}
 
 	_ = w.dbSvc.UpdateStatus(collectCtx, target.ID, newStatus)
+	_ = w.alertSvc.ProcessHealthResult(collectCtx, target.ID, healthResult)
 
 	select {
 	case w.wsHub.Broadcast <- ws.Message{
@@ -191,6 +196,8 @@ func (w *CollectorWorker) recordFailure(ctx context.Context, target database.Mon
 	observability.HTTPRequestsTotal.WithLabelValues("collector", string(target.Type), "failure").Inc()
 
 	res := w.evaluator.Evaluate(nil, false, lastErr)
+	_ = w.alertSvc.ProcessHealthResult(ctx, target.ID, res)
+
 	select {
 	case w.wsHub.Broadcast <- ws.Message{
 		DatabaseID: target.ID,
