@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dbplatform/api/internal/api/response"
+	"github.com/dbplatform/api/internal/api/ws"
 	"github.com/dbplatform/api/internal/collector"
 	"github.com/dbplatform/api/internal/crypto"
 	"github.com/dbplatform/api/internal/database"
@@ -20,6 +21,7 @@ type MetricsHandler struct {
 	dbSvc     *database.Service
 	evaluator *health.Evaluator
 	encryptor *crypto.Encryptor
+	wsHub     *ws.Hub
 	log       zerolog.Logger
 }
 
@@ -28,6 +30,7 @@ func NewMetricsHandler(
 	dbSvc *database.Service,
 	evaluator *health.Evaluator,
 	encryptor *crypto.Encryptor,
+	wsHub *ws.Hub,
 	log zerolog.Logger,
 ) *MetricsHandler {
 	return &MetricsHandler{
@@ -35,6 +38,7 @@ func NewMetricsHandler(
 		dbSvc:     dbSvc,
 		evaluator: evaluator,
 		encryptor: encryptor,
+		wsHub:     wsHub,
 		log:       log,
 	}
 }
@@ -159,4 +163,14 @@ func (h *MetricsHandler) GetSlowQueries(w http.ResponseWriter, r *http.Request) 
 	}
 
 	response.Success(w, r, queries)
+}
+
+func (h *MetricsHandler) LiveStream(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		response.Error(w, r, apperrors.NewValidation("invalid database ID"))
+		return
+	}
+
+	h.wsHub.HandleConnection(w, r, id)
 }

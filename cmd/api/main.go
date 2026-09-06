@@ -15,6 +15,7 @@ import (
 	mainapi "github.com/dbplatform/api/internal/api"
 	"github.com/dbplatform/api/internal/api/handler"
 	"github.com/dbplatform/api/internal/api/middleware"
+	"github.com/dbplatform/api/internal/api/ws"
 	"github.com/dbplatform/api/internal/audit"
 	"github.com/dbplatform/api/internal/auth"
 	"github.com/dbplatform/api/internal/config"
@@ -88,11 +89,15 @@ func main() {
 	healthEvaluator := health.NewEvaluator()
 
 	workerCtx, cancelWorker := context.WithCancel(context.Background())
+	wsHub := ws.NewHub(logger)
+	go wsHub.Run(workerCtx)
+
 	collectorWorker := worker.NewCollectorWorker(
 		dbSvc,
 		metricsSvc,
 		healthEvaluator,
 		encryptor,
+		wsHub,
 		15*time.Second,
 		logger,
 	)
@@ -102,7 +107,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authSvc, auditSvc, logger)
 	dbHandler := handler.NewDatabaseHandler(dbSvc, auditSvc, encryptor, logger)
 	auditHandler := handler.NewAuditLogHandler(auditRepo, logger)
-	metricsHandler := handler.NewMetricsHandler(metricsSvc, dbSvc, healthEvaluator, encryptor, logger)
+	metricsHandler := handler.NewMetricsHandler(metricsSvc, dbSvc, healthEvaluator, encryptor, wsHub, logger)
 
 	rateLimiter := middleware.NewRateLimiter(cfg.Server.RateLimit, cfg.Server.RateBurst)
 

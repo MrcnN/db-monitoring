@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dbplatform/api/internal/api/ws"
 	"github.com/dbplatform/api/internal/collector"
 	"github.com/dbplatform/api/internal/crypto"
 	"github.com/dbplatform/api/internal/database"
@@ -19,6 +20,7 @@ type CollectorWorker struct {
 	metricSvc *metrics.Service
 	evaluator *health.Evaluator
 	encryptor *crypto.Encryptor
+	wsHub     *ws.Hub
 	interval  time.Duration
 	log       zerolog.Logger
 }
@@ -28,6 +30,7 @@ func NewCollectorWorker(
 	metricSvc *metrics.Service,
 	evaluator *health.Evaluator,
 	encryptor *crypto.Encryptor,
+	wsHub *ws.Hub,
 	interval time.Duration,
 	log zerolog.Logger,
 ) *CollectorWorker {
@@ -39,6 +42,7 @@ func NewCollectorWorker(
 		metricSvc: metricSvc,
 		evaluator: evaluator,
 		encryptor: encryptor,
+		wsHub:     wsHub,
 		interval:  interval,
 		log:       log.With().Str("component", "collector_worker").Logger(),
 	}
@@ -140,6 +144,17 @@ func (w *CollectorWorker) collectOne(parentCtx context.Context, target database.
 
 	if err := w.metricSvc.Record(collectCtx, m); err != nil {
 		w.log.Error().Str("database", target.Name).Err(err).Msg("Failed to persist metrics record")
+	} else {
+		select {
+		case w.wsHub.Broadcast <- ws.Message{
+			DatabaseID: target.ID,
+			Payload: map[string]interface{}{
+				"type": "metric_update",
+				"data": m,
+			},
+		}:
+		default:
+		}
 	}
 
 	healthResult := w.evaluator.Evaluate(snapshot, true, nil)
@@ -149,6 +164,17 @@ func (w *CollectorWorker) collectOne(parentCtx context.Context, target database.
 	}
 
 	_ = w.dbSvc.UpdateStatus(collectCtx, target.ID, newStatus)
+
+	select {
+	case w.wsHub.Broadcast <- ws.Message{
+		DatabaseID: target.ID,
+		Payload: map[string]interface{}{
+			"type": "health_update",
+			"data": healthResult,
+		},
+	}:
+	default:
+	}
 
 	observability.HTTPRequestsTotal.WithLabelValues("collector", string(target.Type), "success").Inc()
 
@@ -163,4 +189,16 @@ func (w *CollectorWorker) collectOne(parentCtx context.Context, target database.
 func (w *CollectorWorker) recordFailure(ctx context.Context, target database.MonitoredDatabase, lastErr error) {
 	_ = w.dbSvc.UpdateStatus(ctx, target.ID, database.StatusError)
 	observability.HTTPRequestsTotal.WithLabelValues("collector", string(target.Type), "failure").Inc()
+
+	res := w.evaluator.Evaluate(nil, false, lastErr)
+	select {
+	case w.wsHub.Broadcast <- ws.Message{
+		DatabaseID: target.ID,
+		Payload: map[string]interface{}{
+			"type": "health_update",
+			"data": res,
+		},
+	}:
+	default:
+	}
 }
