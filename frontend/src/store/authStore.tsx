@@ -1,18 +1,9 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { User, LoginRequest } from '../types';
+import { AuthContext } from './authContext';
 import * as authApi from '../api/auth';
 
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
-  logout: () => void;
-  isLoading: boolean;
-}
-
-export const AuthContext = createContext<AuthContextType | null>(null);
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,4 +34,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </AuthContext.Provider>
   );
-};
+}

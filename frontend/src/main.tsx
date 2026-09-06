@@ -5,7 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { queryClient } from './lib/queryClient';
-import { AuthProvider } from './store/authStore';
+import AuthProvider from './store/authStore';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

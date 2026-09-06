@@ -17,6 +17,7 @@ export default function LoginPage() {
       await login({ email, password });
       toast.success('Logged in successfully');
     } catch (err: any) {
+      /* error is displayed via axios interceptor toast */
     } finally {
       setIsSubmitting(false);
     }

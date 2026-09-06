@@ -34,6 +34,7 @@ export const login = async (credentials: LoginRequest): Promise<{ user: User; to
           };
         }
       } catch (_) {
+        /* fallback failed, rethrow original error */
       }
     }
     throw err;
