@@ -84,6 +84,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 			r.Get("/databases/{id}/metrics", cfg.MetricsHandler.GetTimeSeries)
 			r.Get("/databases/{id}/metrics/latest", cfg.MetricsHandler.GetLatest)
 			r.Get("/databases/{id}/health", cfg.MetricsHandler.GetHealth)
+			r.Get("/databases/{id}/slow-queries", cfg.MetricsHandler.GetSlowQueries)
 
 			r.With(middleware.RequireRole(user.RoleAdmin)).Get("/audit-logs", cfg.AuditHandler.List)
 		})

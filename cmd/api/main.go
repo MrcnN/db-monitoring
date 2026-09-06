@@ -102,7 +102,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authSvc, auditSvc, logger)
 	dbHandler := handler.NewDatabaseHandler(dbSvc, auditSvc, encryptor, logger)
 	auditHandler := handler.NewAuditLogHandler(auditRepo, logger)
-	metricsHandler := handler.NewMetricsHandler(metricsSvc, dbSvc, healthEvaluator, logger)
+	metricsHandler := handler.NewMetricsHandler(metricsSvc, dbSvc, healthEvaluator, encryptor, logger)
 
 	rateLimiter := middleware.NewRateLimiter(cfg.Server.RateLimit, cfg.Server.RateBurst)
 

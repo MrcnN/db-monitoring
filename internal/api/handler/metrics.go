@@ -5,6 +5,7 @@ import (
 
 	"github.com/dbplatform/api/internal/api/response"
 	"github.com/dbplatform/api/internal/collector"
+	"github.com/dbplatform/api/internal/crypto"
 	"github.com/dbplatform/api/internal/database"
 	apperrors "github.com/dbplatform/api/internal/errors"
 	"github.com/dbplatform/api/internal/health"
@@ -18,6 +19,7 @@ type MetricsHandler struct {
 	metricSvc *metrics.Service
 	dbSvc     *database.Service
 	evaluator *health.Evaluator
+	encryptor *crypto.Encryptor
 	log       zerolog.Logger
 }
 
@@ -25,12 +27,14 @@ func NewMetricsHandler(
 	metricSvc *metrics.Service,
 	dbSvc *database.Service,
 	evaluator *health.Evaluator,
+	encryptor *crypto.Encryptor,
 	log zerolog.Logger,
 ) *MetricsHandler {
 	return &MetricsHandler{
 		metricSvc: metricSvc,
 		dbSvc:     dbSvc,
 		evaluator: evaluator,
+		encryptor: encryptor,
 		log:       log,
 	}
 }
@@ -117,4 +121,42 @@ func (h *MetricsHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
 
 	res := h.evaluator.Evaluate(snapshot, db.Status != database.StatusError, nil)
 	response.Success(w, r, res)
+}
+
+func (h *MetricsHandler) GetSlowQueries(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		response.Error(w, r, apperrors.NewValidation("invalid database ID"))
+		return
+	}
+
+	db, encPwd, err := h.dbSvc.GetWithCredentials(r.Context(), id)
+	if err != nil {
+		response.Error(w, r, err)
+		return
+	}
+
+	password, err := h.encryptor.Decrypt(encPwd)
+	if err != nil {
+		h.log.Error().Err(err).Msg("Failed to decrypt database password")
+		response.Error(w, r, apperrors.NewInternal(err))
+		return
+	}
+
+	col, err := collector.NewCollector(db, password)
+	if err != nil {
+		h.log.Error().Err(err).Msg("Failed to instantiate collector for slow queries")
+		response.Error(w, r, apperrors.NewInternal(err))
+		return
+	}
+	defer col.Close()
+
+	queries, err := col.GetSlowQueries(r.Context())
+	if err != nil {
+		h.log.Error().Err(err).Msg("Failed to get slow queries")
+		response.Error(w, r, apperrors.NewInternal(err))
+		return
+	}
+
+	response.Success(w, r, queries)
 }
