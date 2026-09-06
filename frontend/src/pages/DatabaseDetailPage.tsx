@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -20,10 +20,13 @@ import { getSlowQueries, getMetrics, getLatestMetric, getDatabaseHealth } from '
 import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { SlowQueryTable } from '../components/database/SlowQueryTable';
+import { useLiveMetrics } from '../hooks/useLiveMetrics';
+import { Metric } from '../types';
 
 export default function DatabaseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [timeRange, setTimeRange] = useState<string>('1h');
   const [activeTab, setActiveTab] = useState<'metrics' | 'slow_queries'>('metrics');
 
@@ -33,26 +36,43 @@ export default function DatabaseDetailPage() {
     enabled: !!id,
   });
 
-  const { data: latestMetric, isLoading: metricLoading } = useQuery({
+  // Fetch initial data once, without polling
+  const { data: initialLatestMetric, isLoading: metricLoading } = useQuery({
     queryKey: ['latestMetric', id],
     queryFn: () => getLatestMetric(id!),
     enabled: !!id,
-    refetchInterval: 10000, // Poll every 10 seconds
   });
 
   const { data: timeSeries = [] } = useQuery({
     queryKey: ['timeSeries', id, timeRange],
     queryFn: () => getMetrics(id!, timeRange),
     enabled: !!id,
-    refetchInterval: 15000,
   });
 
-  const { data: healthData } = useQuery({
+  const { data: initialHealthData } = useQuery({
     queryKey: ['databaseHealth', id],
     queryFn: () => getDatabaseHealth(id!),
     enabled: !!id,
-    refetchInterval: 15000,
   });
+
+  // Connect to WebSocket for live updates
+  const { latestMetric: liveMetric, health: liveHealth, isConnected } = useLiveMetrics(id);
+
+  // Combine initial state with live state
+  const latestMetric = liveMetric || initialLatestMetric;
+  const healthData = liveHealth || initialHealthData;
+
+  // Append live metrics to timeSeries dynamically without refetching all historical data
+  useEffect(() => {
+    if (liveMetric && id) {
+      queryClient.setQueryData<Metric[]>(['timeSeries', id, timeRange], (oldData) => {
+        if (!oldData) return [liveMetric];
+        // Keep the array size reasonable (e.g. last 100 points or so depending on time range)
+        // Here we just append. In a real app we might shift old ones.
+        return [...oldData, liveMetric];
+      });
+    }
+  }, [liveMetric, id, timeRange, queryClient]);
 
   const { data: slowQueries = [], isLoading: slowQueriesLoading } = useQuery({
     queryKey: ['slowQueries', id],
@@ -320,11 +340,15 @@ export default function DatabaseDetailPage() {
         <>
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center space-x-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              <span className={`relative flex h-2 w-2 ${!isConnected ? 'opacity-50' : ''}`}>
+                {isConnected && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                )}
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
               </span>
-              <span className="text-xs text-gray-400">Live Telemetry (Updated every 10s)</span>
+              <span className="text-xs text-gray-400">
+                {isConnected ? 'Live Telemetry Active' : 'Live Telemetry Disconnected'}
+              </span>
             </div>
 
             <div className="inline-flex rounded-md shadow-sm bg-gray-800 p-0.5 border border-gray-700">
