@@ -18,6 +18,7 @@ import (
 	"github.com/dbplatform/api/internal/api/ws"
 	"github.com/dbplatform/api/internal/alert"
 	"github.com/dbplatform/api/internal/incident"
+	"github.com/dbplatform/api/internal/advisor"
 	"github.com/dbplatform/api/internal/audit"
 	"github.com/dbplatform/api/internal/auth"
 	"github.com/dbplatform/api/internal/config"
@@ -93,9 +94,11 @@ func main() {
 	metricsSvc := metrics.NewService(metricsRepo)
 	alertSvc := alert.NewService(alertRepo)
 	incidentSvc := incident.NewService(incidentRepo, logger)
+	advisorSvc := advisor.NewService(dbSvc, encryptor)
 	healthEvaluator := health.NewEvaluator()
 
 	workerCtx, cancelWorker := context.WithCancel(context.Background())
+	defer cancelWorker()
 	wsHub := ws.NewHub(logger)
 	go wsHub.Run(workerCtx)
 
@@ -105,8 +108,9 @@ func main() {
 		healthEvaluator,
 		encryptor,
 		alertSvc,
+		incidentSvc,
 		wsHub,
-		15*time.Second,
+		time.Duration(cfg.Database.MonitoringInterval)*time.Second,
 		logger,
 	)
 	go collectorWorker.Start(workerCtx)
@@ -118,6 +122,7 @@ func main() {
 	metricsHandler := handler.NewMetricsHandler(metricsSvc, dbSvc, healthEvaluator, encryptor, wsHub, logger)
 	alertHandler := handler.NewAlertHandler(alertSvc, logger)
 	incidentHandler := handler.NewIncidentHandler(incidentSvc, logger)
+	advisorHandler := handler.NewAdvisorHandler(advisorSvc, logger)
 
 	rateLimiter := middleware.NewRateLimiter(cfg.Server.RateLimit, cfg.Server.RateBurst)
 
@@ -129,6 +134,7 @@ func main() {
 		MetricsHandler:  metricsHandler,
 		AlertHandler:    alertHandler,
 		IncidentHandler: incidentHandler,
+		AdvisorHandler:  advisorHandler,
 		JWTService:      jwtSvc,
 		RateLimiter:     rateLimiter,
 		Log:             logger,
