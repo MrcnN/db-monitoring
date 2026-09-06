@@ -24,8 +24,18 @@ type MetricsSnapshot struct {
 	RawDetails            map[string]interface{} `json:"raw_details,omitempty"`
 }
 
+type SlowQuery struct {
+	Query       string  `json:"query"`
+	Calls       int64   `json:"calls"`
+	TotalTimeMs float64 `json:"total_time_ms"`
+	MeanTimeMs  float64 `json:"mean_time_ms"`
+	MaxTimeMs   float64 `json:"max_time_ms"`
+	Rows        int64   `json:"rows"`
+}
+
 type Collector interface {
 	Collect(ctx context.Context) (*MetricsSnapshot, error)
+	GetSlowQueries(ctx context.Context) ([]SlowQuery, error)
 	Type() database.DatabaseType
 	Close() error
 }

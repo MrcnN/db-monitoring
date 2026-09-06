@@ -133,3 +133,55 @@ func (c *PostgresCollector) Collect(ctx context.Context) (*MetricsSnapshot, erro
 
 	return snapshot, nil
 }
+
+func (c *PostgresCollector) GetSlowQueries(ctx context.Context) ([]SlowQuery, error) {
+	conn, err := pgx.Connect(ctx, c.dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to postgres: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	// Check if pg_stat_statements exists
+	var extensionExists bool
+	extCheck := "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements')"
+	if err := conn.QueryRow(ctx, extCheck).Scan(&extensionExists); err != nil || !extensionExists {
+		return []SlowQuery{}, nil
+	}
+
+	// For PG13+, it's total_exec_time. For PG <= 12, it's total_time. 
+	// We check versions or just select dynamically. The safest way is to check the columns.
+	// But to avoid complexity, we can select from the view.
+	// We'll use a generic approach that tries PG13+ first, then falls back.
+	
+	q13 := `
+		SELECT query, calls, total_exec_time, mean_exec_time, max_exec_time, rows 
+		FROM pg_stat_statements 
+		WHERE query NOT ILIKE '%pg_stat_statements%'
+		ORDER BY total_exec_time DESC 
+		LIMIT 50
+	`
+	rows, err := conn.Query(ctx, q13)
+	if err != nil {
+		q12 := `
+			SELECT query, calls, total_time, mean_time, max_time, rows 
+			FROM pg_stat_statements 
+			WHERE query NOT ILIKE '%pg_stat_statements%'
+			ORDER BY total_time DESC 
+			LIMIT 50
+		`
+		rows, err = conn.Query(ctx, q12)
+		if err != nil {
+			return []SlowQuery{}, nil
+		}
+	}
+	defer rows.Close()
+
+	var queries []SlowQuery
+	for rows.Next() {
+		var sq SlowQuery
+		if err := rows.Scan(&sq.Query, &sq.Calls, &sq.TotalTimeMs, &sq.MeanTimeMs, &sq.MaxTimeMs, &sq.Rows); err == nil {
+			queries = append(queries, sq)
+		}
+	}
+	return queries, nil
+}

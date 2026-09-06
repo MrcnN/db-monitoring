@@ -139,3 +139,8 @@ func (c *MySQLCollector) Collect(ctx context.Context) (*MetricsSnapshot, error) 
 
 	return snapshot, nil
 }
+
+func (c *MySQLCollector) GetSlowQueries(ctx context.Context) ([]SlowQuery, error) {
+	// For Phase 3, we focus on PostgreSQL. MySQL implementation requires performance_schema setup.
+	return []SlowQuery{}, nil
+}
