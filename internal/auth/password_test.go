@@ -55,7 +55,7 @@ func TestHashPassword_LongPassword(t *testing.T) {
 		long += "a"
 	}
 	_, err := auth.HashPassword(long)
-	if err != nil {
-		t.Fatalf("expected no error for long password, got: %v", err)
+	if err == nil {
+		t.Fatalf("expected error for long password exceeding bcrypt 72 byte limit, got nil")
 	}
 }
