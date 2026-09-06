@@ -110,7 +110,7 @@ func main() {
 		alertSvc,
 		incidentSvc,
 		wsHub,
-		time.Duration(cfg.Database.MonitoringInterval)*time.Second,
+		15*time.Second,
 		logger,
 	)
 	go collectorWorker.Start(workerCtx)
