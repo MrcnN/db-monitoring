@@ -121,46 +121,46 @@ export default function DatabasesPage() {
           }
         />
       ) : (
-        <div className="bg-gray-800 shadow rounded-lg border border-gray-700 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-gray-900/50">
+        <div className="bg-[#0A0A0A] border border-zinc-800/50 shadow rounded-xl overflow-hidden">
+          <table className="min-w-full divide-y divide-zinc-800/50">
+            <thead className="bg-zinc-900/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Instance</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Engine</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Endpoint</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Interval</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Instance</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Engine</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Endpoint</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Interval</th>
                 <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-zinc-800/50 bg-transparent">
               {databases.map((db) => (
-                <tr key={db.id} className="hover:bg-gray-750/50 transition-colors">
+                <tr key={db.id} className="hover:bg-zinc-900/30 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Link to={`/databases/${db.id}`} className="font-semibold text-white hover:text-blue-400 flex items-center space-x-1.5">
+                    <Link to={`/databases/${db.id}`} className="font-semibold text-zinc-200 hover:text-white flex items-center space-x-1.5">
                       <span>{db.name}</span>
-                      <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 text-gray-500" />
+                      <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 text-zinc-500" />
                     </Link>
-                    <span className="text-xs text-gray-400">{db.database_name}</span>
+                    <span className="text-xs text-zinc-500">{db.database_name}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-xs">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-300 uppercase">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-800 text-zinc-300 uppercase border border-zinc-700">
                       {db.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-gray-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-zinc-400">
                     {db.host}:{db.port}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <StatusBadge status={db.status} />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-xs text-zinc-500">
                     {db.monitoring_interval}s
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium space-x-3">
                     <Link
                       to={`/databases/${db.id}`}
-                      className="inline-flex items-center px-2.5 py-1 rounded bg-blue-900/40 text-blue-300 hover:bg-blue-900/70 border border-blue-800"
+                      className="inline-flex items-center px-2.5 py-1 rounded bg-zinc-100 text-black hover:bg-white transition-colors"
                     >
                       Inspect &amp; Telemetry
                     </Link>
@@ -170,7 +170,7 @@ export default function DatabasesPage() {
                           deleteMutation.mutate(db.id);
                         }
                       }}
-                      className="text-gray-500 hover:text-red-400 p-1"
+                      className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
                       title="Delete"
                     >
                       <TrashIcon className="h-4 w-4" />

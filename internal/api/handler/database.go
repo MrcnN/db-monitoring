@@ -327,7 +327,35 @@ func (h *DatabaseHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		Status:       "success",
 	})
 
-	response.NoContent(w)
+	response.NoContent(w, r)
+}
+
+func (h *DatabaseHandler) ExecuteQuery(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		response.Error(w, r, apperrors.NewValidation("invalid id"))
+		return
+	}
+
+	var input struct {
+		Query string `json:"query"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		response.Error(w, r, apperrors.NewValidation("invalid request body"))
+		return
+	}
+	if input.Query == "" {
+		response.Error(w, r, apperrors.NewValidation("query is required"))
+		return
+	}
+
+	res, err := h.dbSvc.ExecuteQuery(r.Context(), id, input.Query)
+	if err != nil {
+		response.Error(w, r, err)
+		return
+	}
+
+	response.Success(w, r, res)
 }
 
 func (h *DatabaseHandler) TestConnection(w http.ResponseWriter, r *http.Request) {

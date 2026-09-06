@@ -21,6 +21,7 @@ import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { SlowQueryTable } from '../components/database/SlowQueryTable';
 import { AlertsTable } from '../components/database/AlertsTable';
+import { SqlConsole } from '../components/database/SqlConsole';
 import { useLiveMetrics } from '../hooks/useLiveMetrics';
 import { Metric } from '../types';
 import { getAlerts } from '../api/alerts';
@@ -30,7 +31,7 @@ export default function DatabaseDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [timeRange, setTimeRange] = useState<string>('1h');
-  const [activeTab, setActiveTab] = useState<'metrics' | 'slow_queries' | 'alerts'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'slow_queries' | 'alerts' | 'sql_console'>('metrics');
 
   const { data: db, isLoading: dbLoading } = useQuery({
     queryKey: ['database', id],
@@ -352,6 +353,16 @@ export default function DatabaseDetailPage() {
           >
             Alerts History
           </button>
+          <button
+            onClick={() => setActiveTab('sql_console')}
+            className={`${
+              activeTab === 'sql_console'
+                ? 'border-zinc-100 text-zinc-100'
+                : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+          >
+            SQL Console
+          </button>
         </nav>
       </div>
 
@@ -424,9 +435,13 @@ export default function DatabaseDetailPage() {
         <div className="pt-2">
           <SlowQueryTable queries={slowQueries} isLoading={slowQueriesLoading} databaseId={id} />
         </div>
-      ) : (
+      ) : activeTab === 'alerts' ? (
         <div className="pt-2">
           <AlertsTable alerts={alerts} isLoading={alertsLoading} />
+        </div>
+      ) : (
+        <div className="pt-6">
+          <SqlConsole databaseId={id!} />
         </div>
       )}
     </div>

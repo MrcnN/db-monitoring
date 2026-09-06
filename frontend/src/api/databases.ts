@@ -28,6 +28,17 @@ export const deleteDatabase = async (id: string): Promise<void> => {
   await api.delete(`/databases/${id}`);
 };
 
+export interface QueryResult {
+  columns: string[];
+  rows: any[][];
+  time_ms: number;
+}
+
+export const executeQuery = async (id: string, query: string): Promise<QueryResult> => {
+  const response = await api.post(`/databases/${id}/query`, { query });
+  return response.data?.data;
+};
+
 export const testConnection = async (data: Partial<CreateDatabaseRequest>): Promise<{ success: boolean; message: string }> => {
   return new Promise((resolve) => {
     setTimeout(() => {

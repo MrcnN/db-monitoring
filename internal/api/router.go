@@ -83,6 +83,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 			r.With(middleware.RequireRole(user.RoleAdmin, user.RoleOperator)).Put("/databases/{id}", cfg.DatabaseHandler.Update)
 			r.With(middleware.RequireRole(user.RoleAdmin, user.RoleOperator)).Delete("/databases/{id}", cfg.DatabaseHandler.Delete)
 			r.Post("/databases/{id}/test-connection", cfg.DatabaseHandler.TestConnection)
+			r.Post("/databases/{id}/query", cfg.DatabaseHandler.ExecuteQuery)
 
 			r.Get("/databases/{id}/metrics", cfg.MetricsHandler.GetTimeSeries)
 			r.Get("/databases/{id}/metrics/latest", cfg.MetricsHandler.GetLatest)
