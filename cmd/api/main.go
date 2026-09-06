@@ -78,6 +78,7 @@ func main() {
 
 	userRepo := user.NewRepository(pool)
 	sessionRepo := user.NewSessionRepository(pool)
+	seedAdminUser(ctx, userRepo, logger)
 	dbRepo := database.NewRepository(pool)
 	auditRepo := audit.NewRepository(pool)
 	metricsRepo := metrics.NewRepository(pool)
@@ -185,6 +186,29 @@ func setupLogger(cfg *config.Config) zerolog.Logger {
 		Str("service", cfg.App.Name).
 		Str("version", version).
 		Logger()
+}
+
+func seedAdminUser(ctx context.Context, userRepo user.Repository, log zerolog.Logger) {
+	_, err := userRepo.GetByEmail(ctx, "admin@example.com")
+	if err == nil {
+		return
+	}
+	hash, err := auth.HashPassword("password")
+	if err != nil {
+		return
+	}
+	admin := &user.User{
+		Email:        "admin@example.com",
+		PasswordHash: hash,
+		FullName:     "System Administrator",
+		Role:         user.RoleAdmin,
+		IsActive:     true,
+	}
+	if err := userRepo.Create(ctx, admin); err != nil {
+		log.Warn().Err(err).Msg("Could not seed default admin user")
+		return
+	}
+	log.Info().Msg("Default admin user created")
 }
 
 
