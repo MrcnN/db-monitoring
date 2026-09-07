@@ -204,8 +204,53 @@ func (s *Service) ExecuteQuery(ctx context.Context, id uuid.UUID, query string) 
 			data = append(data, vals)
 			count++
 		}
+	} else if target.Type == TypeMySQL {
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
+			target.Username, password, target.Host, target.Port, target.DatabaseName)
+
+		dbConn, err := sql.Open("mysql", dsn)
+		if err != nil {
+			return nil, apperrors.NewInternal(fmt.Errorf("failed to connect: %w", err))
+		}
+		defer dbConn.Close()
+
+		rows, err := dbConn.QueryContext(ctx, query)
+		if err != nil {
+			return nil, apperrors.NewValidation(fmt.Sprintf("Query error: %v", err))
+		}
+		defer rows.Close()
+
+		colNames, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		}
+		cols = colNames
+
+		count := 0
+		for rows.Next() && count < 500 {
+			columns := make([]interface{}, len(cols))
+			columnPointers := make([]interface{}, len(cols))
+			for i := range columns {
+				columnPointers[i] = &columns[i]
+			}
+
+			if err := rows.Scan(columnPointers...); err != nil {
+				return nil, err
+			}
+
+			rowVals := make([]interface{}, len(cols))
+			for i, col := range columns {
+				if b, ok := col.([]byte); ok {
+					rowVals[i] = string(b)
+				} else {
+					rowVals[i] = col
+				}
+			}
+			data = append(data, rowVals)
+			count++
+		}
 	} else {
-		return nil, apperrors.NewValidation("SQL Console currently only supports PostgreSQL")
+		return nil, apperrors.NewValidation("SQL Console currently only supports PostgreSQL and MySQL")
 	}
 
 	return &QueryResult{
