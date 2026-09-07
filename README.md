@@ -54,15 +54,20 @@ The Database Health & Performance Platform is a unified monitoring and managemen
 | Redis           | Tailwind CSS    | Grafana           |
 
 ## Quick Start
+
+### Windows Kullanıcıları İçin (Tek Tıkla Başlatma)
+Projeyi indirdikten sonra ana dizinde bulunan `baslat.bat` dosyasına çift tıklayarak sistemi tek seferde ayağa kaldırabilirsiniz. Bu dosya, projeyi kendi ihtiyaçlarınıza göre düzenlediğinizde de (yeni özellik eklediğinizde vb.) hızlıca derleyip açmanız için tasarlanmıştır. `baslat.bat` içeriğini sağ tıklayıp düzenleyerek dilediğiniz gibi değiştirebilirsiniz.
+
+### Terminal/CLI Üzerinden
 ```bash
-git clone https://github.com/example/dbplatform.git
-cd dbplatform
+git clone https://github.com/MrcnN/db-monitoring.git
+cd db-monitoring
 cp .env.example .env
 
 # Edit .env with your secrets
 make generate-secrets  # generate JWT_SECRET and ENCRYPTION_KEY
 
-docker compose up -d
+docker compose up --build -d
 # Visit http://localhost:3000
 ```
 
