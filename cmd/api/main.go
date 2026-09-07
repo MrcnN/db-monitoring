@@ -23,6 +23,7 @@ import (
 	"github.com/dbplatform/api/internal/auth"
 	"github.com/dbplatform/api/internal/config"
 	"github.com/dbplatform/api/internal/crypto"
+	"github.com/dbplatform/api/internal/diagnostic"
 	"github.com/dbplatform/api/internal/database"
 	"github.com/dbplatform/api/internal/health"
 	"github.com/dbplatform/api/internal/metrics"
@@ -95,6 +96,7 @@ func main() {
 	alertSvc := alert.NewService(alertRepo)
 	incidentSvc := incident.NewService(incidentRepo, logger)
 	advisorSvc := advisor.NewService(dbSvc, encryptor)
+	diagnosticSvc := diagnostic.NewService(dbSvc, encryptor)
 	healthEvaluator := health.NewEvaluator()
 
 	workerCtx, cancelWorker := context.WithCancel(context.Background())
@@ -123,21 +125,23 @@ func main() {
 	alertHandler := handler.NewAlertHandler(alertSvc, logger)
 	incidentHandler := handler.NewIncidentHandler(incidentSvc, logger)
 	advisorHandler := handler.NewAdvisorHandler(advisorSvc, logger)
+	diagnosticHandler := handler.NewDiagnosticHandler(diagnosticSvc)
 
 	rateLimiter := middleware.NewRateLimiter(cfg.Server.RateLimit, cfg.Server.RateBurst)
 
 	router := mainapi.NewRouter(mainapi.RouterConfig{
-		HealthHandler:   healthHandler,
-		AuthHandler:     authHandler,
-		DatabaseHandler: dbHandler,
-		AuditHandler:    auditHandler,
-		MetricsHandler:  metricsHandler,
-		AlertHandler:    alertHandler,
-		IncidentHandler: incidentHandler,
-		AdvisorHandler:  advisorHandler,
-		JWTService:      jwtSvc,
-		RateLimiter:     rateLimiter,
-		Log:             logger,
+		HealthHandler:     healthHandler,
+		AuthHandler:       authHandler,
+		DatabaseHandler:   dbHandler,
+		AuditHandler:      auditHandler,
+		MetricsHandler:    metricsHandler,
+		AlertHandler:      alertHandler,
+		IncidentHandler:   incidentHandler,
+		AdvisorHandler:    advisorHandler,
+		DiagnosticHandler: diagnosticHandler,
+		JWTService:        jwtSvc,
+		RateLimiter:       rateLimiter,
+		Log:               logger,
 	})
 
 	srv := &http.Server{

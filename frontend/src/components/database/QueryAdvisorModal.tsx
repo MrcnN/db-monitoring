@@ -3,6 +3,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { useQuery } from '@tanstack/react-query';
 import { explainQuery } from '../../api/advisor';
+import { VisualQueryPlan } from './VisualQueryPlan';
 
 interface QueryAdvisorModalProps {
   isOpen: boolean;
@@ -87,9 +88,11 @@ export default function QueryAdvisorModal({ isOpen, onClose, databaseId, query }
                           </div>
                           <div className="mt-6">
                             <h4 className="text-sm font-medium text-gray-300 mb-2">Raw Execution Plan</h4>
-                            <pre className="bg-gray-900 p-3 rounded text-xs font-mono text-gray-400 overflow-x-auto max-h-60 overflow-y-auto">
+                            <pre className="bg-gray-900 p-3 rounded text-xs font-mono text-gray-400 overflow-x-auto max-h-60 overflow-y-auto mb-4">
                               {JSON.stringify(data.plan, null, 2)}
                             </pre>
+                            
+                            <VisualQueryPlan planData={data.plan} />
                           </div>
                         </>
                       ) : null}

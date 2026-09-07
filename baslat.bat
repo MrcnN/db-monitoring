@@ -1,8 +1,6 @@
 @echo off
 chcp 65001 >nul
-echo ========================================================
-echo        DB Platform - Baslatma Dosyasi
-echo ========================================================
+echo        Database Monitoring Başlatılıyor
 echo.
 echo Bu dosya projeyi Docker uzerinden tek tikla ayaga kaldirmak icindir.
 echo Kodlari indirdiginizde (veya degistirdiginizde) bu dosyayi calistirabilirsiniz.

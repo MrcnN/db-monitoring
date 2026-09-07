@@ -25,13 +25,16 @@ import { SqlConsole } from '../components/database/SqlConsole';
 import { useLiveMetrics } from '../hooks/useLiveMetrics';
 import { Metric } from '../types';
 import { getAlerts } from '../api/alerts';
+import { getDatabaseLocks, getDatabaseStorage } from '../api/diagnostics';
+import { ActiveLocksTable } from '../components/database/ActiveLocksTable';
+import { StorageAnalyzer } from '../components/database/StorageAnalyzer';
 
 export default function DatabaseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [timeRange, setTimeRange] = useState<string>('1h');
-  const [activeTab, setActiveTab] = useState<'metrics' | 'slow_queries' | 'alerts' | 'sql_console'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'slow_queries' | 'alerts' | 'sql_console' | 'storage' | 'locks'>('metrics');
 
   const { data: db, isLoading: dbLoading } = useQuery({
     queryKey: ['database', id],
@@ -56,6 +59,19 @@ export default function DatabaseDetailPage() {
     queryKey: ['databaseHealth', id],
     queryFn: () => getDatabaseHealth(id!),
     enabled: !!id,
+  });
+
+  const { data: locksData } = useQuery({
+    queryKey: ['databaseLocks', id],
+    queryFn: () => getDatabaseLocks(id!),
+    enabled: !!id && activeTab === 'locks',
+    refetchInterval: 5000,
+  });
+
+  const { data: storageData } = useQuery({
+    queryKey: ['databaseStorage', id],
+    queryFn: () => getDatabaseStorage(id!),
+    enabled: !!id && activeTab === 'storage',
   });
 
   const { data: alerts = [], isLoading: alertsLoading } = useQuery({
@@ -357,11 +373,31 @@ export default function DatabaseDetailPage() {
             onClick={() => setActiveTab('sql_console')}
             className={`${
               activeTab === 'sql_console'
-                ? 'border-zinc-100 text-zinc-100'
-                : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
             } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
           >
             SQL Console
+          </button>
+          <button
+            onClick={() => setActiveTab('storage')}
+            className={`${
+              activeTab === 'storage'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+          >
+            Storage & Bloat
+          </button>
+          <button
+            onClick={() => setActiveTab('locks')}
+            className={`${
+              activeTab === 'locks'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+          >
+            Live Locks
           </button>
         </nav>
       </div>
@@ -439,9 +475,17 @@ export default function DatabaseDetailPage() {
         <div className="pt-2">
           <AlertsTable alerts={alerts} isLoading={alertsLoading} />
         </div>
-      ) : (
+      ) : activeTab === 'sql_console' ? (
         <div className="pt-6">
           <SqlConsole databaseId={id!} />
+        </div>
+      ) : activeTab === 'locks' ? (
+        <div className="pt-4">
+          <ActiveLocksTable locks={locksData || []} />
+        </div>
+      ) : (
+        <div className="pt-4">
+          <StorageAnalyzer storageStats={storageData || []} />
         </div>
       )}
     </div>

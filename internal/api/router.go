@@ -22,9 +22,10 @@ type RouterConfig struct {
 	AuditHandler    *handler.AuditLogHandler
 	MetricsHandler  *handler.MetricsHandler
 	AlertHandler    *handler.AlertHandler
-	IncidentHandler *handler.IncidentHandler
-	AdvisorHandler  *handler.AdvisorHandler
-	JWTService      *auth.JWTService
+	IncidentHandler   *handler.IncidentHandler
+	AdvisorHandler    *handler.AdvisorHandler
+	DiagnosticHandler *handler.DiagnosticHandler
+	JWTService        *auth.JWTService
 	RateLimiter     *middleware.RateLimiter
 	Log             zerolog.Logger
 	AllowedOrigins  []string
@@ -92,6 +93,9 @@ func NewRouter(cfg RouterConfig) http.Handler {
 			r.Get("/databases/{id}/live", cfg.MetricsHandler.LiveStream)
 			r.Get("/databases/{id}/metrics/slow-queries", cfg.MetricsHandler.GetSlowQueries)
 			r.Post("/databases/{id}/advisor/explain", cfg.AdvisorHandler.ExplainQuery)
+			
+			r.Get("/databases/{id}/diagnostics/locks", cfg.DiagnosticHandler.GetLocks)
+			r.Get("/databases/{id}/diagnostics/storage", cfg.DiagnosticHandler.GetStorage)
 
 			r.Get("/alerts", cfg.AlertHandler.ListActive)
 

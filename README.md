@@ -9,13 +9,15 @@ The Database Health & Performance Platform is a unified monitoring and managemen
 
 ## Features
 -  **DB Management**: Connect and monitor PostgreSQL and MySQL targets
--  **RBAC Auth**: JWT-based authentication with role-based access control
--  **Audit Logging**: Comprehensive activity tracking and security logging
+-  **Live Telemetry**: Track Connections, Cache Hits, Query Rates, and Latency
+-  **Interactive SQL Console**: Execute raw queries safely on your databases directly from the dashboard
+-  **Live Lock & Blocking Query Monitor**: Instantly visualize queries that are blocking each other (Deadlock/Contention analysis)
+-  **Storage & Bloat Analyzer**: Identify wasted space (dead tuples) and optimize table/index footprints
+-  **Smart Query Advisor**: Heuristics-based and AI-powered recommendations for optimizing slow queries
+-  **Visual EXPLAIN Plan**: Turn complex database execution plans into clear, visual trees
+-  **Alert Engine & Incidents**: Get notified via custom channels when thresholds are breached
+-  **RBAC Auth & Audit Logging**: Enterprise-grade security and activity tracking
 -  **Docker Ready**: Fully containerized with a streamlined `docker-compose` setup
--  **Prometheus Metrics**: Export performance data for rich visualizations
--  **Metrics & Collectors**: Modular architecture for database statistics
--  **Query Analysis**: Slow query logging and optimization insights (Phase 3)
--  **Alert Engine**: Incident management and smart alerts (Phase 4)
 
 ## Architecture
 ```text
